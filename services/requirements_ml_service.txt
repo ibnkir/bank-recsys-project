@@ -1,0 +1,11 @@
+prometheus-fastapi-instrumentator==7.0.0
+fastapi==0.111.0
+uvicorn==0.29.0
+numpy
+pandas
+joblib>=1.2.0
+scikit-learn==1.4.0
+category-encoders==2.6.3
+autofeat==2.1.2
+catboost==1.2.3
+
