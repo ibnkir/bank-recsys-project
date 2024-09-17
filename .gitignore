@@ -161,8 +161,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-input_data/
-clean_data/
+data/
 services/models/
 
 notebooks/catboost_info/
