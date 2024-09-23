@@ -1,4 +1,4 @@
-"""Класс FastApiHandler для обработки запросов к FastAPI-сервису предсказания цен на квартиры.
+"""Класс FastApiHandler для обработки запросов к сервису рекомендации банковских продуктов.
 
 Чтобы протестировать этот файл без запуска uvicorn, нужно перейти в папку services/
 и выполнить любую из двух команд: 
@@ -13,12 +13,21 @@ import numpy as np
 import pandas as pd
 import joblib
 from datetime import datetime
+from catboost import CatBoostClassifier
+from sklearn.compose import ColumnTransformer
 
 
 class FastApiHandler:
-    """Класс FastApiHandler для обработки запросов к FastAPI-сервису предсказания цен на квартиры."""
+    """
+    Класс FastApiHandler для обработки запросов к FastAPI-сервису 
+    рекомендации банковских продуктов.
+    """
 
-    def __init__(self, model_path="./models/flats_prices_fitted_pipeline.pkl"):
+    def __init__(self, 
+                 test_data_path="./data/clean_data_test.csv.zip",
+                 pop_ranked_prods_path="./data/pop_ranked_prods.parquet",
+                 data_preprocessor_path="./model/data_preprocessor_fs.pkl",
+                 model_path="./models/cb_clf_final.cbm"):
         """Метод для инициализации переменных класса."""
 
         # Типы параметров запроса для проверки
@@ -28,45 +37,65 @@ class FastApiHandler:
 
         # Словарь со всеми обязательными параметрами модели и допустимыми типами их значений
         self.required_model_params = {
-            'floor':[int], 
-            'kitchen_area':[float, int], 
-            'living_area': [float, int], 
-            'rooms': [int], 
-            'is_apartment': [bool, int],
-            'total_area': [float, int], 
-            'build_year': [int], 
-            'building_type_int': [int], 
-            'latitude': [float, int], 
-            'longitude': [float, int], 
-            'ceiling_height': [float, int],
-            'flats_count': [int], 
-            'floors_total': [int], 
-            'has_elevator': [bool, int]
+            'ncodpers':[int],
+            'top_k':[int]
         }
 
         # Описание ошибки
         self.err_msg = ''
 
-        # Загружаем обученную ценовую модель
-        self.load_price_model(model_path=model_path)
-        
-    def load_price_model(self, model_path: str):
-        """Метод для загрузки обученной ценовой модели.
-        Args:
-            - model_path (str): Путь до модели.
-        """
+        # Загружаем тестовые данные, откуда будем брать параметры для модели
+        self.load_test_data(test_data_path=test_data_path)
+
+        # Загружаем данные о популярности продуктов для рекомендаций по умолчанию
+        self.load_pop_ranked_prods(pop_ranked_prods_path=pop_ranked_prods_path)
+
+        # Загружаем обученный трансформер данных
+        self.load_data_preprocessor(data_preprocessor_path=data_preprocessor_path)
+
+        # Загружаем обученный классификатор
+        self.load_model(model_path=model_path)
+
+    def load_test_data(self, data_path: str):
         try:
-            self.pipeline = joblib.load(model_path)
+            self.test_data = pd.read_csv(data_path)
+        except Exception as e:
+            print(f"Failed to load test data, {e}")
+            self.test_data = None
+
+    def load_pop_ranked_prods(self, pop_ranked_prods_path: str):
+        try:
+            self.pop_ranked_prods = pd.read_parquet(pop_ranked_prods_path)
+        except Exception as e:
+            print(f"Failed to load products data, {e}")
+            self.pop_ranked_prods = None
+
+    def load_data_preprocessor(self, data_preprocessor_path: str):
+        try:
+            self.data_preprocessor = joblib.load(data_preprocessor_path)
+        except Exception as e:
+            print(f"Failed to load data preprocessor, {e}")
+            self.data_preprocessor = None
+        
+    def load_model(self, model_path: str):
+        try:
+            self.cb_clf = CatBoostClassifier()
+            self.cb_clf.load_model(model_path)
         except Exception as e:
             print(f"Failed to load model, {e}")
-            self.pipeline = None
+            self.clf = None
 
-    def price_predict(self, model_params: dict) -> float:
-        """Метод для получения прогнозной цены (параметры модели должны проверяться до вызова этого метода).
-        Args:
-            - model_params (dict): Параметры модели.
-        Returns: Прогнозная цена (float).
+    def generate_recommendations(self, model_params: dict) -> float:
         """
+        Метод для получения рекомендаций (параметры модели должны проверяться до вызова этого метода).
+        Args:
+        - model_params (dict): Параметры модели.
+        Returns: список продуктов (float).
+        """
+        
+        
+        
+        
         # Считаем возраст здания, т.к. наша модель ожидает этот параметр вместо года постройки
         model_params['building_age'] = datetime.now().year - model_params['build_year']
         # Удаляем лишний параметр
@@ -76,7 +105,8 @@ class FastApiHandler:
         return self.pipeline.predict(model_params_df)[0]
         
     def check_required_query_params(self, query_params: dict) -> bool:
-        """Метод для проверки параметров запроса.
+        """
+        Метод для проверки параметров запроса.
         Args:
             - query_params (dict): Параметры запроса.
         Returns: True, если есть нужные параметры, иначе False .
@@ -90,7 +120,8 @@ class FastApiHandler:
         return True
     
     def check_required_model_params(self, model_params: dict) -> bool:
-        """Метод для проверки параметров модели.
+        """
+        Метод для проверки параметров модели.
         Args:
             - model_params (dict): Параметры модели.
         Returns: True, если есть все требуемые параметры, их типы соответствуют заданным и 
@@ -106,7 +137,6 @@ class FastApiHandler:
             print(self.err_msg)
             return False
                
-        
         # Проверяем, что типы значений соответствуют заданным и все числовые параметры положительны
         for k, v in model_params.items():
             # Проверяем типы значений
@@ -141,7 +171,8 @@ class FastApiHandler:
         return True
     
     def validate_params(self, params: dict) -> bool:
-        """Проверяем наличие и корректность всех параметров.
+        """
+        Проверяем наличие и корректность всех параметров.
         Args:
             - params (dict): Параметры запроса.
         Returns: True, если все параметры корректны, иначе False.
@@ -160,19 +191,37 @@ class FastApiHandler:
         return False
 		
     def handle(self, params):
-        """Функция для обработки FastAPI-запросов.
+        """
+        Функция для обработки FastAPI-запросов.
         Args:
-            - params (dict): Параметры запроса.
+        - params (dict): Параметры запроса.
         Returns:
-            - Словарь с результатами выполнения запроса.
+        - Словарь с результатами выполнения запроса.
         """
         print('Processing request...')
         try:
-            # Проверяем, была ли загружена модель
-            if not self.pipeline:
+            # Проверяем, были ли загружены тестовые данные
+            if not self.test_data:
                 response = {
                     'status': 'Error',
-                    'message': "Model not found"
+                    'message': "Test data not found"
+                }
+            # Проверяем, были ли данные о популярности продуктов
+            elif not self.pop_ranked_prods:
+                response = {
+                    'status': 'Error',
+                    'message': "Products data not found"
+                }
+            elif not self.data_preprocessor:
+                response = {
+                    'status': 'Error',
+                    'message': "Data preprocessor not found"
+                }
+            # Проверяем, была ли загружена модель
+            elif not self.clf:
+                response = {
+                    'status': 'Error',
+                    'message': "Classifier not found"
                 }
             # Валидируем запрос
             elif not self.validate_params(params):
@@ -182,11 +231,11 @@ class FastApiHandler:
                 }
             else:
                 model_params = params["model_params"]
-                print("Making prediction...")
-                y_pred = self.price_predict(model_params)
+                print("Generating recommendations...")
+                recs = self.generate_recommendations(model_params)
                 response = {
                     'status': 'OK',
-                    'score': y_pred 
+                    'recs': recs 
                 }    
         
         except Exception as e:
@@ -206,29 +255,23 @@ def main():
     # Создаём параметры для тестового запроса
     test_params = {
         'model_params': {
-            'floor': 6,
-            'kitchen_area': 8.5,
-            'living_area': 30.0,
-            'rooms': 2,
-            'is_apartment': False,
-            'total_area': 50.0,
-            'build_year': 1979,
-            'building_type_int': 4,
-            'latitude': 60.0,
-            'longitude': 40.0,
-            'ceiling_height': 2.5,
-            'flats_count': 190,
-            'floors_total': 12,
-            'has_elevator': True
+            'ncodpers': 1000,
+            'top_k': 7
         }
     }
 
-    # Прописываем путь для общего случая, 
+    # Прописываем пути для общего случая, 
     # чтобы можно было запускать этот тест не только из папки services
-    model_path = os.path.join(os.path.dirname(__file__), '../models/flats_prices_fitted_pipeline.pkl')
+    test_data_path = os.path.join(os.path.dirname(__file__), '../data/clean_data_test.csv.zip')
+    pop_ranked_prods_path = os.path.join(os.path.dirname(__file__), '../data/pop_ranked_prods.parquet')
+    data_preprocessor_path = os.path.join(os.path.dirname(__file__), '../models/data_preprocessor_fs.pkl')
+    model_path = os.path.join(os.path.dirname(__file__), '../models/cb_clf_final.cbm')
 
     # Создаём обработчик запросов
-    handler = FastApiHandler(model_path)
+    handler = FastApiHandler(test_data_path, 
+                             pop_ranked_prods_path, 
+                             data_preprocessor_path, 
+                             model_path)
 
     # Обрабатываем тестовый запрос
     response = handler.handle(test_params)

@@ -163,7 +163,7 @@ cython_debug/
 
 data/
 services/models/
-
+services/data/
 notebooks/catboost_info/
 
 # Reviews from Yandex Practicum

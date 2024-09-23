@@ -22,7 +22,7 @@ import configparser
 
 
 # Настраиваем логирование
-logger = logging.getLogger('test_service_logs')
+logger = logging.getLogger('test_logs')
 
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.INFO)
@@ -39,11 +39,9 @@ config.read("config.ini")
 
 # Читаем url-адреса всех сервисов из конфигурационного файла
 # Основной сервис для получения оффлайн- и онлайн-рекомендаций
-recommendations_url = config["urls"]["recommendations_url"] # "http://127.0.0.1:8000"
-# Вспомогательный сервис для получения рекомендаций по умолчанию на основе топ-треков
-features_store_url = config["urls"]["features_store_url"] # "http://127.0.0.1:8010"
-# Вспомогательный сервис для хранения и получения последних онлайн-событий пользователя
-events_store_url = config["urls"]["events_store_url"] # "http://127.0.0.1:8020"
+main_recsys_url = config["urls"]["main_recsys_url"] # "http://127.0.0.1:8000"
+# Вспомогательный сервис для получения рекомендаций по умолчанию на основе популярных продуктов
+pop_prods_store_url = config["urls"]["pop_prods_url"] # "http://127.0.0.1:8010"
 
 
 # Общий заголовок для всех http-запросов
