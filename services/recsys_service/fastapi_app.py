@@ -4,16 +4,13 @@ FastAPI-приложение для сервиса рекомендаций ба
 Основные обрабатываемые запросы:
 - /get_recs - получение рекомендаций
 
-Для запуска перейти в папку services/recsys_service/ и выполнить команду:
-uvicorn recsys_app:app --reload --port 8081 --host 0.0.0.0
+Для запуска перейти в папку services/ и выполнить команду:
+uvicorn recsys_service.fastapi_app:app --reload --port 8081 --host 0.0.0.0
 
 либо, если работа ведется полностью локально:
-uvicorn fastapi_app:app --reload --port 8081 --host 127.0.0.1
+uvicorn recsys_service.fastapi_app:app --reload --port 8081 --host 127.0.0.1
 
 Если используется другой порт, то заменить 8081 на этот порт.
-
-Для просмотра документации API и совершения тестовых запросов через 
-Swagger UI зайти на  http://127.0.0.1:8081/docs
 
 Для запуска и тестирования см. инструкции в файле README.md
 """
@@ -26,7 +23,7 @@ import pandas as pd
 import numpy as np
 
 
-# Создаем несколько вспомогательных структур
+# Создаем несколько вспомогательных структур данных
 
 # Словарь для перевода названий продуктов на англ. яз.
 prod2eng = {
@@ -97,7 +94,7 @@ class Recommendations:
         elif type == "default":
             self._recs[type] = pd.read_parquet(path, **kwargs)
 
-    def get_default(self, top_k: int=7):
+    def get_default(self, top_k : int = 7):
         """
         Возвращает список рекомендаций по умолчанию
         """

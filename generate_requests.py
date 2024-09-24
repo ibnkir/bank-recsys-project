@@ -34,10 +34,8 @@ logging.basicConfig(level=logging.INFO,
 config = configparser.ConfigParser()
 config.read("config.ini")  
 
-# Читаем url-адрес сервиса из конфигурационного файла
-# Основной сервис для получения рекомендаций
-recsys_url = config["urls"]["recsys_url"] # "http://127.0.0.1:8000"
-
+# Читаем url-адрес сервиса из конфигурационного файла "http://127.0.0.1:8000"
+recsys_url = config["urls"]["recsys_url"] 
 
 # Общий заголовок для всех http-запросов
 headers = {"Content-type": "application/json", "Accept": "text/plain"}
