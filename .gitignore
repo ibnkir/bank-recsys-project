@@ -162,8 +162,8 @@ cython_debug/
 #.idea/
 
 data/
-services/models/
-services/data/
+models/
+services/recs_data/
 notebooks/catboost_info/
 
 # Reviews from Yandex Practicum
