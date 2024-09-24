@@ -2,17 +2,22 @@
 FastAPI-приложение для сервиса рекомендаций банковских продуктов.
 
 Основные обрабатываемые запросы:
-- /get_recs - получение рекомендаций
+- /get_pop_recs - получение рекомендаций по умолчанию
+- /get_user_recs - получение рекомендаций для заданного user_id
 
 Для запуска перейти в папку services/ и выполнить команду:
-uvicorn recsys_service.fastapi_app:app --reload --port 8081 --host 0.0.0.0
+uvicorn recsys_service.fastapi_app:app --reload --port 1702 --host 0.0.0.0
 
 либо, если работа ведется полностью локально:
-uvicorn recsys_service.fastapi_app:app --reload --port 8081 --host 127.0.0.1
+uvicorn recsys_service.fastapi_app:app --reload --port 1702 --host 127.0.0.1
 
-Если используется другой порт, то заменить 8081 на этот порт.
+Убедиться, что сервис поднялся, можно перейдя по ссылке:
+http://localhost:1702/
 
-Для запуска и тестирования см. инструкции в файле README.md
+Для отправки тестовых запросов можно использовать Swagger UI:
+http://localhost:1702/docs
+
+Для остановки uvicorn использовать Ctrl+C
 """
 
 import logging
@@ -94,7 +99,7 @@ class Recommendations:
         elif type == "default":
             self._recs[type] = pd.read_parquet(path, **kwargs)
 
-    def get_default(self, top_k : int = 7):
+    def get_pop_recs(self, top_k : int = 7):
         """
         Возвращает список рекомендаций по умолчанию
         """
@@ -106,7 +111,7 @@ class Recommendations:
 
         return recs
     
-    def get_user_recs(self, user_id: int, top_k: int = 7):
+    def get_user_recs(self, user_id: int = 1351337, top_k: int = 7):
         """
         Возвращает список рекомендаций для заданного клиента
         """
@@ -180,17 +185,17 @@ def read_root():
 
 
 # Получение рекомендаций по умолчанию из числа популярных продуктов
-@app.post("/get_recs")
+@app.post("/get_pop_recs")
 async def recommendations_default(top_k: int = 7):
     """
     Возвращает список рекомендаций по умолчанию длиной top_k
     """
-    recs = recs_store.get_default(top_k)
+    recs = recs_store.get_pop_recs(top_k)
     return {"recs": recs}
 
 
 # Получение готовых персональных рекомендаций
-@app.post("/get_recs")
+@app.post("/get_user_recs")
 async def recommendations_offline(user_id: int, top_k: int = 7):
     """
     Возвращает список оффлайн-рекомендаций длиной top_k для пользователя user_id
@@ -200,4 +205,4 @@ async def recommendations_offline(user_id: int, top_k: int = 7):
 
 
 if __name__ == "__main__":
-    uvicorn.run("recsys_app:app", host="0.0.0.0", port="8081")
+    uvicorn.run("recsys_app:app", host="0.0.0.0", port="1702")
