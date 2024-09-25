@@ -49,7 +49,8 @@
 - `models/` - папка для сериализованных обученных моделей;
 - `services/requirements_recys_service.txt` - библиотеки для установки в контейнере;
 - `services/Dockerfile` - конфигурационный файл для контейнеризации сервиса;
-- `services/recsys_service/fastapi_app.py` - исходный код для создания FastAPI-приложения;
+- `services/recsys_service/fastapi_app.py` - исходный код FastAPI-приложения;
+- `services/recsys_service/fastapi_handler.py` - исходный код обработчика запросов к FastAPI-приложению;
 - `test_service.py` - скрипт для отправки тестовых запросов из командной строки.
 
 
@@ -189,12 +190,12 @@ __Получение рекомендаций на 28.06.2016 г.__
 
 Перед запуском убедитесь, что в папке `services/recs_data` находятся все необходимые файлы с готовыми рекомендациями (см. выше)
 
-__Запуск в виртуальном окружении__
-- Перейти на терминале в папку `services/`    
-- Запустить сервер uvicorn:
-  ```
-  uvicorn recsys_service.fastapi_app:app --reload --port 1702 --host 0.0.0.0
-  ```
+- __Запуск в виртуальном окружении__
+  - Перейти на терминале в папку `services/`    
+  - Запустить сервер uvicorn:
+    ```
+    uvicorn recsys_service.fastapi_app:app --reload --port 1702 --host 0.0.0.0
+    ```
 
 __Запуск в Docker-контейнере__
 - Перейти на терминале в папку `services/`
