@@ -47,7 +47,7 @@ def get_pop_recs(top_k: int = 7):
     Возвращает названия top_k популярных продуктов
     """
     params = {'top_k': top_k}
-    resp = requests.post(recsys_url + "/get_pop_recs", headers=headers, params=params)
+    resp = requests.post(recsys_url + "/pop_recs", headers=headers, params=params)
     if resp.status_code == 200:
         resp = resp.json()
         logger.info(f"top-{top_k} popular products: {resp['recs']}")
@@ -58,7 +58,7 @@ def get_pop_recs(top_k: int = 7):
 # Получение персональных рекомендаций по user_id
 def get_user_recs(user_id: int, top_k: int = 7):
     params = {'user_id': user_id, 'top_k': top_k}
-    resp = requests.post(recsys_url + "/get_user_recs", headers=headers, params=params)
+    resp = requests.post(recsys_url + "/user_recs", headers=headers, params=params)
     if resp.status_code == 200:
         resp = resp.json()
         logger.info(f"Recommendations for user_id={user_id}: {resp['recs']}")
@@ -80,11 +80,13 @@ if __name__ == "__main__":
         parser.add_argument ('-user_id', '--user_id')
         parser.add_argument ('-top_k', '--top_k')
         namespace = parser.parse_args(sys.argv[1:])
-        if namespace.user_id is None: 
+        
+        if namespace.user_id is None and namespace.top_k is None: 
             logger.info(f"Error, wrong parameters")
+        elif namespace.user_id is None:
+            get_pop_recs(namespace.top_k)
         elif namespace.top_k is None:
             get_user_recs(namespace.user_id)
         else: 
             get_user_recs(namespace.user_id, namespace.top_k)
-
-        
+                 
