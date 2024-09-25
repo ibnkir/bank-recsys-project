@@ -1,5 +1,5 @@
 """
-Вспомогательный скрипт для отправки тестовых запросов из командной строки.
+Вспомогательный скрипт для отправки тестовых запросов из командной строки и логирования результатов.
 
 Основные реализованные функции:
 - get_pop_recs - получение рекомендаций по умолчанию из числа топ-популярных продуктов;
@@ -56,7 +56,7 @@ def get_pop_recs(top_k: int = 7):
     
 
 # Получение персональных рекомендаций по user_id
-def get_user_recs(user_id: int = 617032, top_k: int = 7):
+def get_user_recs(user_id: int, top_k: int = 7):
     params = {'user_id': user_id, 'top_k': top_k}
     resp = requests.post(recsys_url + "/get_user_recs", headers=headers, params=params)
     if resp.status_code == 200:
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     else:
         parser.add_argument ('-user_id', '--user_id')
         parser.add_argument ('-top_k', '--top_k')
-        namespace = parser.parse_args(sys.argv[2:])
+        namespace = parser.parse_args(sys.argv[1:])
         if namespace.user_id is None: 
             logger.info(f"Error, wrong parameters")
         elif namespace.top_k is None:

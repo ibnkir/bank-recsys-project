@@ -2,10 +2,10 @@
 FastAPI-приложение для сервиса рекомендаций банковских продуктов.
 
 Основные обрабатываемые запросы:
-- /get_pop_recs - получение рекомендаций по умолчанию
-- /get_user_recs - получение рекомендаций для заданного user_id
+- /pop_recs - получение рекомендаций по умолчанию
+- /user_recs - получение рекомендаций для заданного user_id
 
-Для запуска перейти в папку services/ и выполнить команду:
+Для запуска перейти на терминале в папку services/ и выполнить команду:
 uvicorn recsys_service.fastapi_app:app --reload --port 1702 --host 0.0.0.0
 
 либо, если работа ведется полностью локально:
@@ -14,8 +14,9 @@ uvicorn recsys_service.fastapi_app:app --reload --port 1702 --host 127.0.0.1
 Убедиться, что сервис поднялся, можно перейдя по ссылке:
 http://localhost:1702/
 
-Для отправки тестовых запросов можно использовать Swagger UI:
-http://localhost:1702/docs
+Отправка тестовых запросов:
+- Swagger UI: http://localhost:1702/docs
+- С помощью скрипта test_services.py (см. инструкции в readme.md)
 
 Для остановки uvicorn использовать Ctrl+C
 """
@@ -27,36 +28,6 @@ from contextlib import asynccontextmanager
 import pandas as pd
 import numpy as np
 
-
-# Создаем несколько вспомогательных структур данных
-
-# Словарь для перевода названий продуктов на англ. яз.
-prod2eng = {
-    "ind_ahor_fin_ult1" : "Saving Account",
-    "ind_aval_fin_ult1" : "Guarantees",
-    "ind_cco_fin_ult1" : "Current Account",
-    "ind_cder_fin_ult1" : "Derivada Account",
-    "ind_cno_fin_ult1" : "Payroll Account",
-    "ind_ctju_fin_ult1" : "Junior Account",
-    "ind_ctma_fin_ult1" : "Más Particular Account",
-    "ind_ctop_fin_ult1" : "Particular Account",
-    "ind_ctpp_fin_ult1" : "Particular Plus Account",
-    "ind_deco_fin_ult1" : "Short-term Deposits",
-    "ind_deme_fin_ult1" : "Medium-term Deposits",
-    "ind_dela_fin_ult1" : "Long-term Deposits",
-    "ind_ecue_fin_ult1" : "E-account",
-    "ind_fond_fin_ult1" : "Funds",
-    "ind_hip_fin_ult1" : "Mortgage",
-    "ind_plan_fin_ult1" : "Plan Pensions",
-    "ind_pres_fin_ult1" : "Loans",
-    "ind_reca_fin_ult1" : "Taxes",
-    "ind_tjcr_fin_ult1" : "Credit Card",
-    "ind_valo_fin_ult1" : "Securities",
-    "ind_viv_fin_ult1" : "Home Account",
-    "ind_nomina_ult1" : "Payroll",
-    "ind_nom_pens_ult1" : "Pensions",
-    "ind_recibo_ult1" : "Direct Debit"
-}
 
 # Имена колонок с предсказаниями покупок продуктов из числа top_n популярных
 topn_pop_prods_added_pred_cols = [
@@ -105,13 +76,11 @@ class Recommendations:
         """
         pop_ranked_prods = self._recs["default"] 
         recs = list(pop_ranked_prods['eng_name'][:top_k])
-        
         self._stats["new_clients_requests_count"] += 1
-        logger.info(f"New clients requests count: {self._stats['new_clients_requests_count']}")
-
+        
         return recs
     
-    def get_user_recs(self, user_id: int = 1351337, top_k: int = 7):
+    def get_user_recs(self, user_id: int, top_k: int = 7):
         """
         Возвращает список рекомендаций для заданного клиента
         """
@@ -120,31 +89,25 @@ class Recommendations:
         
         recs = []
         try:
-            topn_prods = june_2016_recs[june_2016_recs['ncodpers'] == user_id][topn_pop_prods_added_pred_cols]\
-                .to_numpy()[0]
-            try:
-                rec_prods_idxs = np.argwhere(topn_prods)[0]
-                # У клиента есть ненулевые рекомендации
-                recs = list(pop_ranked_prods['eng_name'][rec_prods_idxs])[:top_k]
+            user_df = june_2016_recs[june_2016_recs['ncodpers'] == user_id]
+            user_prods = user_df[topn_pop_prods_added_pred_cols].to_numpy()[0]
 
-                self._stats["existing_clients_with_recs_requests_count"] += 1
-                logger.info(f"Existing clients with recs requests count: \
-                            {self._stats['existing_clients_with_recs_requests_count']}")
-            except:
+            if user_prods.sum() != 0:
+                # У клиента есть ненулевые рекомендации
+                recommended_prods_idxs = np.argwhere(user_prods)[0]
+                recs = list(pop_ranked_prods['eng_name'][recommended_prods_idxs])[:7]
+            else:
                 # У клиента нет рекомендаций (группа "не беспокоить")
-                self._stats["existing_clients_wo_recs_requests_count"] += 1
-                logger.info(f"Existing clients without recs requests count: \
-                            {self._stats['existing_clients_wo_recs_requests_count']}")
                 return []
         
-        except:
+        except IndexError:
             # Клиент не найден, предлагаем популярные продукты по умолчанию
-            recs = list(pop_ranked_prods['eng_name'][:top_k])
+            recs = list(pop_ranked_prods['eng_name'][:7])
 
         return recs
 
     def stats(self):
-        logger.info("Stats for recommendations")
+        logger.info("Requests statistics")
         for name, value in self._stats.items():
             logger.info(f"{name:<30} {value} ")
 
@@ -185,7 +148,7 @@ def read_root():
 
 
 # Получение рекомендаций по умолчанию из числа популярных продуктов
-@app.post("/get_pop_recs")
+@app.post("/pop_recs")
 async def recommendations_default(top_k: int = 7):
     """
     Возвращает список рекомендаций по умолчанию длиной top_k
@@ -195,8 +158,8 @@ async def recommendations_default(top_k: int = 7):
 
 
 # Получение готовых персональных рекомендаций
-@app.post("/get_user_recs")
-async def recommendations_offline(user_id: int, top_k: int = 7):
+@app.post("/user_recs")
+async def recommendations_offline(user_id: int = 1351337, top_k: int = 7):
     """
     Возвращает список оффлайн-рекомендаций длиной top_k для пользователя user_id
     """
