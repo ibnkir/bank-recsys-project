@@ -76,8 +76,8 @@
     ```
 
 Чтобы не выполнять подготовительный код в Jupyter-ноутбуке и сразу перейти к запуску и тестированию сервиса, скачайте следующие два файла с готовыми рекомендациями и положите их в папку `services/recs_data/` 
-  - Рекомендации по умолчанию на основе популярных продуктов: [pop_ranked_products.parquet](https://disk.yandex.ru/d/qE9gZxkyjxevoA)
-  - Персональные рекомендации на 28.06.2016, спрогнозированные моделью: [june_2016_recs.csv.zip](https://disk.yandex.ru/d/4dcIJrLHvrijwA)
+  - Рекомендации по умолчанию на основе популярных продуктов [pop_ranked_products.parquet](https://disk.yandex.ru/d/qE9gZxkyjxevoA)
+  - Персональные рекомендации на 28.06.2016, спрогнозированные моделью [june_2016_recs.csv.zip](https://disk.yandex.ru/d/4dcIJrLHvrijwA)
     
 ## Этапы и результаты выполнения проекта
 
