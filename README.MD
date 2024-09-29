@@ -219,8 +219,6 @@ __Получение рекомендаций на 28.06.2016__
 ```python test_service.py --user_id 0 --top_k 7```
 - Новый клиент без user_id<br>
 ```python test_service.py --top_k 7```
-- Новый клиент без user_id<br>
-```python test_service.py```
 
 
 ### 4.6 Мониторинг 
